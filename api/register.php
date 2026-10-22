@@ -8,6 +8,6 @@ switch ($method) {
     break;
   default:
     http_response_code(405);
-    echo json_enode(['error' => "Unhandled method $method on endpoint $path"]);
+    echo json_encode(['error' => "Unhandled method $method on endpoint $path"]);
     break;
 }
