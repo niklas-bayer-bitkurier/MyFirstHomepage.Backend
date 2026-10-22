@@ -14,6 +14,9 @@ switch ($path) {
     case '/users':
         require_once __DIR__ .'/pages/users.php';
         break;
+    case '/login':
+      require_once __DIR__.'/api/login.php';
+      break;
     case '/notes':
         require_once __DIR__ .'/api/notes.php';
         break;
