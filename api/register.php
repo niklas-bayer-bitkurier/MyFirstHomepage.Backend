@@ -20,11 +20,13 @@ switch ($method) {
       exit;
     }
 
-    if (strlen($password) != 64) {
+    if (strlen($password) < 8) {
       http_response_code(400);
-      echo json_encode(['error' => "Password has was odd"]);
+      echo json_encode(['error' => "Password too short"]);
       exit;
     }
+
+    $password = hash('sha256', $password);
 
     $stmt = $pdo->prepare("
       SELECT COUNT(id) FROM users
