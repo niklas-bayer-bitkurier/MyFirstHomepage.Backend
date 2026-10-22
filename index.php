@@ -17,6 +17,9 @@ switch ($path) {
     case '/login':
       require_once __DIR__.'/api/login.php';
       break;
+    case '/register':
+      require_once __DIR__.'/api/register.php';
+      break;
     case '/notes':
         require_once __DIR__ .'/api/notes.php';
         break;
