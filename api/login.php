@@ -34,7 +34,14 @@ switch ($method) {
     }
 
     $password = null;
-    echo json_encode(['Success' => 'Logged in']);
+    $stmt = $pdo->prepare("
+      SELECT id FROM users
+      WHERE name = :name
+    ");
+    $stmt->execute(['name' => $username]);
+    $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
+    require_once __DIR__.'/../auth/token.php';
+    echo create_token($user_id, $pdo);
     break;
   default:
     http_response_code(405);
