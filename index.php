@@ -13,6 +13,7 @@ switch ($method) {
     exit;
 }
 
+$session_token = $_COOKIE['__Host-session'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {

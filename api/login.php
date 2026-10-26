@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../helpers/array_helper.php';
 
 switch ($method) {
   case 'POST':
@@ -13,21 +14,20 @@ switch ($method) {
       exit;
     }
 
-    if (strlen($password) < 8) {
+    /*if (strlen($password) < 8) {
       http_response_code(400);
       echo json_encode(['error' => "Password too short"]);
       exit;
-    }
+    }*/
 
     $password = hash('sha256', $password);
-
     $stmt = $pdo->prepare("
       SELECT COUNT(id) FROM users
       WHERE name = :name AND password = :password
     ");
     $stmt->execute(['name' => $username, 'password' => $password]);
     $user_count_json = $stmt->fetch(PDO::FETCH_ASSOC);
-    $user_count = json_decode($user_count_json['COUNT(id)']);
+    $user_count = json_encode($user_count_json['COUNT(id)']);
 
     if ($user_count != 1) {
       http_response_code(401);
@@ -43,6 +43,31 @@ switch ($method) {
     $stmt->execute(['name' => $username]);
     $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
     require_once __DIR__.'/../auth/token.php';
+    $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    
+    if (isset($existing_session)) {
+      if ($existing_session['is_valid']) {
+        if ($existing_session['user_id'] == $user_id) {
+          echo json_encode([
+            'Existing session' => "User $username is already logged in ..."
+          ]);
+          exit;
+        } else {
+          $str = $existing_session['user_id'];
+          echo json_encode([
+            'Sesiond found' => "For another user, $str"
+          ]);
+        }
+      } else {
+        $str = $existing_session['user_id'];
+        echo json_encode([
+          'Outdated session found' => "$str"
+        ]);
+      }
+    } else {
+      echo json_encode(['No session' => "found"]);
+    }
+    
     echo create_token($user_id, $pdo);
     break;
   default:

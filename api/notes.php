@@ -4,6 +4,15 @@ require_once __DIR__ . '/../config/database.php';
 
 switch ($method) {
     case 'GET':
+        $data = json_decode(file_get_contents('php://index'), true);
+        $token_hash = $data['token_hash'];
+
+        if (!isset($token_hash)) {
+          http_response_code(401);
+          echo json_encode(['error' => 'Not authrized to retrieve users']);
+          exit;
+        }
+
         if (!isset($_GET['user'])) {
             http_response_code(400);
             echo json_encode(['error' => "GET must specify a query"]);
