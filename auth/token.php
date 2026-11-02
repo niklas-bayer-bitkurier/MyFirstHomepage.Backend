@@ -35,7 +35,7 @@ function find_session($token, $pdo) {
   ');
   $stmt->execute(['token_hash' => $token_hash]);
   $result = $stmt->fetch(PDO::FETCH_ASSOC);
-  if (!$result) {
+  if (!isset($result)) {
     return null;
   }
   $expires_at = $result['expires_at'];
