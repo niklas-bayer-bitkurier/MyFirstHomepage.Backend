@@ -1,8 +1,23 @@
 <?php
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../helpers/array_helper.php';
+require_once __DIR__.'/../auth/token.php';
 
 switch ($method) {
+  case 'GET':
+    $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    $is_logged_in = isset($existing_session) && $existing_session['is_valid'];
+    $username = null;
+    if ($is_logged_in) {
+      $stmt = &pdo->prepare("
+        SELECT name FROM users
+        WHERE id = :id
+      ");
+      $stmt->execute(['id' => $existing_session['user_id']]);
+      $username = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    echo json_encode(['loggedin' => $is_logged_in, 'username' => $username]);
+    break;
   case 'POST':
     $data = json_decode(file_get_contents("php://input"), true);
     $username = $data['name'];
@@ -42,7 +57,6 @@ switch ($method) {
     ");
     $stmt->execute(['name' => $username]);
     $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
-    require_once __DIR__.'/../auth/token.php';
     $existing_session = find_session(hash('sha256', $session_token), $pdo);
     $retval = [];
     
