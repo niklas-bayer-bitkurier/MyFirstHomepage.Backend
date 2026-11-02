@@ -26,7 +26,21 @@ switch ($method) {
     $requester = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!isset($_GET['user'])) {
-      if ($requester['role'] != 'r') {
+      $stmt = $pdo->prepare("
+        SELECT notes.id AS 'noteId', title, content, users.name FROM notes
+        JOIN users ON notes.ownerId = users.id
+        WHERE ownerId = :user
+      ");
+      $stmt->execute(['user' => $existing_session['user_id']]);
+      $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      echo json_encode($notes);
+      exit;
+    }
+    
+    $user = filter_input(INPUT_GET, 'user', FILTER_VALIDATE_INT);
+
+    if ($user == '-1') {
+      if ($requester['role'] !='r') {
         http_response_code(401);
         echo json_encode(['error' => "Not authorized to retrieve all notes"]);
         exit;
@@ -39,8 +53,6 @@ switch ($method) {
       echo json_encode($notes);
       exit;
     }
-    
-    $user = filter_input(INPUT_GET, 'user', FILTER_VALIDATE_INT);
 
     if ($requester['id'] != $user && $requester['role'] != 'r') {
       http_response_code(401);
