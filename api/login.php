@@ -44,31 +44,28 @@ switch ($method) {
     $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
     require_once __DIR__.'/../auth/token.php';
     $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    $retval = [];
     
     if (isset($existing_session)) {
       if ($existing_session['is_valid']) {
         if ($existing_session['user_id'] == $user_id) {
           echo json_encode([
-            'Existing session' => "User $username is already logged in ..."
+            'session_found' => "User $username is already logged in ..."
           ]);
           exit;
         } else {
           $str = $existing_session['user_id'];
-          echo json_encode([
-            'Sesiond found' => "For another user, $str"
-          ]);
+          $retval['session_found'] = "Found another session for user: $str";
         }
       } else {
         $str = $existing_session['user_id'];
-        echo json_encode([
-          'Outdated session found' => "$str"
-        ]);
+        $retval['session_found'] = "Outdated session found for user: $str";
       }
     } else {
-      echo json_encode(['No session' => "found"]);
+      $retval['session_found'] = "No session found";
     }
-    
-    echo create_token($user_id, $pdo);
+    $retval['token'] = create_token($user_id, $pdo);
+    echo json_encode($retval);
     break;
   default:
     http_response_code(405);

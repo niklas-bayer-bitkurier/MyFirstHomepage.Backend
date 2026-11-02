@@ -24,9 +24,7 @@ function create_token($user_id, $pdo) {
 
   $session[$user_id] = $token_hash;
   
-  return json_encode([
-    'success' => true
-  ]);
+  return ['success' => true ];
 }
 
 function find_session($token_hash, $pdo) {
