@@ -27,7 +27,8 @@ function create_token($user_id, $pdo) {
   return ['success' => true ];
 }
 
-function find_session($token_hash, $pdo) {
+function find_session($token, $pdo) {
+  $token_hash = hash('sha256', $token);
   $stmt = $pdo->prepare('
     SELECT id, expires_at, user_id FROM auth_tokens
     WHERE token_hash = :token_hash

@@ -5,7 +5,7 @@ require_once __DIR__.'/../auth/token.php';
 
 switch ($method) {
   case 'GET':
-    $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    $existing_session = find_session($session_token, $pdo);
 
     if (!isset($existing_session)) {
       http_response_code(401);

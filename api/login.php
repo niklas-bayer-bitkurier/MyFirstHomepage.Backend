@@ -5,7 +5,7 @@ require_once __DIR__.'/../auth/token.php';
 
 switch ($method) {
   case 'GET':
-    $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    $existing_session = find_session($session_token, $pdo);
     $is_logged_in = isset($existing_session) && $existing_session['is_valid'];
     $username = null;
     if ($is_logged_in) {
@@ -57,7 +57,7 @@ switch ($method) {
     ");
     $stmt->execute(['name' => $username]);
     $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
-    $existing_session = find_session(hash('sha256', $session_token), $pdo);
+    $existing_session = find_session($session_token, $pdo);
     $retval = [];
     
     if (isset($existing_session)) {
