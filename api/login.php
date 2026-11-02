@@ -9,7 +9,7 @@ switch ($method) {
     $is_logged_in = isset($existing_session) && $existing_session['is_valid'];
     $username = null;
     if ($is_logged_in) {
-      $stmt = &pdo->prepare("
+      $stmt = $pdo->prepare("
         SELECT name FROM users
         WHERE id = :id
       ");
