@@ -14,7 +14,7 @@ switch ($method) {
         WHERE id = :id
       ");
       $stmt->execute(['id' => $existing_session['user_id']]);
-      $username = $stmt->fetch(PDO::FETCH_ASSOC);
+      $username = $stmt->fetch(PDO::FETCH_ASSOC)['name'];
     }
     echo json_encode(['loggedin' => $is_logged_in, 'username' => $username]);
     break;
