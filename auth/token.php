@@ -19,7 +19,7 @@ function create_token($user_id, $pdo) {
     'path' => '/',
     'secure' => true,
     'httponly' => true,
-    'samesite' => 'Lax'
+    'samesite' => 'None'
   ]);
 
   $session[$user_id] = $token_hash;
@@ -35,7 +35,7 @@ function find_session($token, $pdo) {
   ');
   $stmt->execute(['token_hash' => $token_hash]);
   $result = $stmt->fetch(PDO::FETCH_ASSOC);
-  if (!isset($result)) {
+  if (!$result) {
     return null;
   }
   $expires_at = $result['expires_at'];
