@@ -3,21 +3,22 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../auth/token.php';
 
+$existing_session = find_session($session_token, $pdo);
+
+if (!($existing_session)) {
+  http_response_code(401);
+  echo json_encode(['error' => 'Not authorized to retrieve users']);
+  exit;
+}
+
+if (!$existing_session['is_valid']) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Outdated session']);
+  exit;
+}
+
 switch ($method) {
   case 'GET':
-    $existing_session = find_session($session_token, $pdo);
-
-    if (!isset($existing_session)) {
-      http_response_code(401);
-      echo json_encode(['error' => 'Not authrized to retrieve users']);
-      exit;
-    }
-
-    if (!$existing_session['is_valid']) {
-      http_response_code(400);
-      echo json_encode(['error' => 'Outdated session']);
-    }
-
     $stmt = $pdo->prepare('
       SELECT id, name, role FROM users
       WHERE id = :id
