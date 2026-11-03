@@ -1,6 +1,51 @@
+# ==================================================
+# Apache Configuration – PHP Front Controller
+# ==================================================
+
+Options -Indexes
+
 RewriteEngine On
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
 
-RewriteRule ^ index.php [QSA,L]
+# ==================================================
+# 1. Allow Let's Encrypt
+# ==================================================
+
+RewriteRule ^\.well-known(?:/|$) - [END]
+
+
+# ==================================================
+# 2. Block hidden files and directories
+# ==================================================
+
+RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,END,NC]
+
+
+# ==================================================
+# 3. Block sensitive files
+# ==================================================
+
+<FilesMatch "(?i)^(?:\.env(?:\..*)?|\.htaccess|\.htpasswd|composer\.(?:json|lock)|package(?:-lock)?\.json)$">
+    Require all denied
+</FilesMatch>
+
+
+# ==================================================
+# 4. Block direct PHP execution
+# ==================================================
+
+RewriteCond %{THE_REQUEST} "\s/+(.*/)?(?!index\.php(?:[?\s]|$))[^?\s]*\.php(?:[?\s]|$)" [NC]
+RewriteRule ^ - [R=404,END]
+
+
+# ==================================================
+# 5. Front Controller
+# ==================================================
+
+# Serve existing files and directories directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [END]
+
+# Route everything else through index.php
+RewriteRule ^ index.php [END]
