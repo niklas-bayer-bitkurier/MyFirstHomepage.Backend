@@ -26,11 +26,7 @@ switch ($method) {
     $requester = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!isset($_GET['user'])) {
-      $stmt = $pdo->prepare("
-        SELECT notes.id AS 'noteId', title, content, users.name FROM notes
-        JOIN users ON notes.ownerId = users.id
-        WHERE ownerId = :user
-      ");
+      $stmt = prepare_select_notes($pdo);
       $stmt->execute(['user' => $existing_session['user_id']]);
       $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
       echo json_encode($notes);
@@ -62,11 +58,7 @@ switch ($method) {
       exit;
     }
 
-    $stmt = $pdo->prepare("
-      SELECT notes.id AS 'noteId', title, content, users.name FROM notes
-      JOIN users ON notes.ownerId = users.id
-      WHERE ownerId = :user
-    ");
+    $stmt = prepare_select_notes($pdo);
     $stmt->execute(['user' => $user]);
     $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode($notes);
@@ -75,4 +67,12 @@ switch ($method) {
     http_response_code(405);
     echo json_encode(['error' => "Unhandled method $method at endpoint $path"]);
     break;
+}
+
+function prepare_select_notes($pdo) {
+  return $pdo->prepare('
+    SELECT notes.id AS "id", title, content, users.name AS "owner", creationDate, lastUpdated FROM notes
+    JOIN users ON notes.ownerId = users.id
+    WHERE ownerId = :user
+  ');
 }
