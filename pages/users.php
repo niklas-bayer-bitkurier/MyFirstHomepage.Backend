@@ -1,8 +1,26 @@
 <?php
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../auth/token.php';
+
+$existing_session = find_session($session_token, $pdo);
+
+if (!isset($existing_session)) {
+  no_authorization();
+}
+
+$stmt = $pdo->prepare('
+  SELECT name, role FROM users
+  WHERE id = :id
+');
+$stmt->execute(['id' => $existing_session['user_id']]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if ($user['role'] != 'r') {
+  no_authorization();
+}
 
 switch ($method) {
-    case 'GET':
+      case 'GET':
 	      if (isset($_GET['id'])) {
 	          $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             
@@ -32,4 +50,10 @@ switch ($method) {
 	      http_response_code(405);
 	      echo json_encode(['error' => "Could not find method: $method for endpoint: $path"], JSON_UNESCAPED_SLASHES);
 	      break;
+}
+
+function no_authorization() {
+  http_response_code(401);
+  echo json_encode(['error' => 'No authorization to access this resource']);
+  exit;
 }
