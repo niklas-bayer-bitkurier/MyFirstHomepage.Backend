@@ -5,7 +5,7 @@ require_once __DIR__.'/../auth/token.php';
 
 $existing_session = find_session($session_token, $pdo);
 
-if (!($existing_session)) {
+if (!isset($existing_session)) {
   http_response_code(401);
   echo json_encode(['error' => 'Not authorized to retrieve users']);
   exit;
@@ -63,6 +63,34 @@ switch ($method) {
     $stmt->execute(['user' => $user]);
     $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode($notes);
+    break;
+  case 'POST':
+    $current_time = time();
+    $data = json_decode(file_get_contents("php://input"), true);
+    $creation_id = $data['creation_id'];
+    $title = $data['title'];
+    $content = $data['content'];
+
+    if (!(isset($creation_id) && isset($title) && isset($content))) {
+      http_response_code(400);
+      echo json_encode(['error' => 'A title and a some content must be specified when POSTing a note']);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('
+      INSERT INTO notes (title, content, owner_id, creation_date, last_updated)
+      VALUES (:title, :content, :owner_id, :creation_date, :last_updated)
+    ');
+    $stmt->execute(['title' => $title, 'content' => $content, 'owner_id' => $existing_session['user_id'], 'creation_date' => $current_time, 'last_updated' => $current_time]);
+    $id = (int) $pdo->lastInsertId();
+    $stmt = $pdo->prepare('
+      SELECT * from notes
+      WHERE id = :id
+    ');
+    $stmt->execute(['id' => $id]);
+    $note = $stmt->fetch(PDO::FETCH_ASSOC);
+    $note['creation_id'] = $creation_id;
+    echo json_encode([$note]);
     break;
   default:
     http_response_code(405);
