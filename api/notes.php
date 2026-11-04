@@ -72,8 +72,8 @@ switch ($method) {
 
 function prepare_select_notes($pdo) {
   return $pdo->prepare('
-    SELECT notes.id AS "id", title, content, users.name AS "owner", creationDate, lastUpdated FROM notes
-    JOIN users ON notes.ownerId = users.id
-    WHERE ownerId = :user
+    SELECT notes.id AS "id", title, content, users.name AS "owner", creation_date, last_updated FROM notes
+    JOIN users ON notes.owner_id = users.id
+    WHERE owner_id = :user
   ');
 }
