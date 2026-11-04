@@ -20,11 +20,13 @@ switch ($method) {
       exit;
     }
 
-    if (strlen($password) != 64) {
+    if (strlen($password) < 8) {
       http_response_code(400);
-      echo json_encode(['error' => "Password has was odd"]);
+      echo json_encode(['error' => "Password too short"]);
       exit;
     }
+
+    $password = hash('sha256', $password);
 
     $stmt = $pdo->prepare("
       SELECT COUNT(id) FROM users
@@ -45,7 +47,15 @@ switch ($method) {
     ");
     $stmt->execute(['name' => $name, 'password' => $password]);
     $stmt->fetch(PDO::FETCH_ASSOC);
-    
+    $stmt = $pdo->prepare("
+      SELECT id FROM users
+      WHERE name = :name
+    ");
+    $stmt->execute(['name' => $name]);
+    $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
+
+    require_once __DIR__.'/../auth/token.php';
+    echo create_token($user_id, $pdo);
     break;
   default:
     http_response_code(405);
