@@ -43,7 +43,8 @@ switch ($method) {
         exit;
       }
       $stmt = $pdo->prepare('
-        SELECT * FROM notes;
+        SELECT * FROM notes
+        ORDER BY last_updated;
       ');
       $stmt->execute();
       $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -145,5 +146,6 @@ function prepare_select_notes($pdo) {
     SELECT notes.id AS "id", title, content, users.name AS "owner", creation_date, last_updated FROM notes
     JOIN users ON notes.owner_id = users.id
     WHERE owner_id = :user
+    ORDER BY last_updated
   ');
 }
