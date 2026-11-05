@@ -90,11 +90,53 @@ switch ($method) {
     $stmt->execute(['id' => $id]);
     $note = $stmt->fetch(PDO::FETCH_ASSOC);
     $note['creation_id'] = $creation_id;
-    echo json_encode([$note]);
+    echo json_encode($note);
     break;
   default:
     http_response_code(405);
     echo json_encode(['error' => "Unhandled method $method at endpoint $path"]);
+    break;
+  case 'PATCH':
+    $current_time = time();
+    $data = json_decode(file_get_contents("php://input"), true);
+    $id = $data['id'];
+    $title = $data['title'];
+    $content = $data['content'];
+
+    if (!(isset($id) && isset($title) && isset($content))) {
+      http_response_code(400);
+      echo json_encode(['error' => "A note's id, its title and content must be specified when PATCHing"]);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('
+      SELECT COUNT(id) FROM notes
+      WHERE id = :id
+    ');
+    $stmt->execute(['id' => $id]);
+    $count = $stmt->fetch(PDO::FETCH_ASSOC)['COUNT(id)'];
+
+    if ($count != 1) {
+      http_response_code(400);
+      echo json_encode(['error' => 'The specified note could not be found']);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('
+      UPDATE notes
+      SET title = :title, content = :content, last_updated = :last_updated
+      WHERE id = :id
+    ');
+    $stmt->execute(['title' => $title, 'content' => $content, 'last_updated' => $current_time, 'id' => $id]);
+
+    $stmt = $pdo->prepare('
+      SELECT * FROM notes
+      WHERE id = :id
+    ');
+    $stmt->execute(['id' => $id]);
+    $note = $stmt->fetch(PDO::FETCH_ASSOC);
+    $note['creation_id'] = null;
+    echo json_encode($note);
     break;
 }
 
