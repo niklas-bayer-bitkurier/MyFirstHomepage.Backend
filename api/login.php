@@ -2,7 +2,7 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../helpers/array_helper.php';
 require_once __DIR__.'/../auth/token.php';
-require_once __DIR__.'/../auth/password.php';
+require_once __DIR__.'/../auth/user_auth.php';
 
 switch ($method) {
   case 'GET':
