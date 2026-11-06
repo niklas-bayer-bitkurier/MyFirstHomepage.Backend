@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../auth/password.php';
 
 switch ($method) {
   case 'POST':
@@ -26,36 +27,19 @@ switch ($method) {
       exit;
     }
 
-    $password = hash('sha256', $password);
+    $salt = create_salt();
+    $password = compute_hash($password, $salt);
+    $user_id = register_user(['name' => $name, 'password' => $password, 'salt' => $salt], $pdo);
 
-    $stmt = $pdo->prepare("
-      SELECT COUNT(id) FROM users
-      WHERE name = :name
-    ");
-    $stmt->execute(['name' => $name]);
-    $user_exists = $stmt->fetch(PDO::FETCH_ASSOC)['COUNT(id)'];
-
-    if ($user_exists != 0) {
+    if ($user_id == -1) {
       http_response_code(400);
       echo json_encode(['error' => "User already exists"]);
       exit;
     }
 
-    $stmt = $pdo->prepare("
-      INSERT INTO users (name, password)
-      VALUES (:name, :password)
-    ");
-    $stmt->execute(['name' => $name, 'password' => $password]);
-    $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt = $pdo->prepare("
-      SELECT id FROM users
-      WHERE name = :name
-    ");
-    $stmt->execute(['name' => $name]);
-    $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
-
     require_once __DIR__.'/../auth/token.php';
-    echo create_token($user_id, $pdo);
+    $retval['token'] = create_token($user_id, $pdo);
+    echo json_encode($retval);
     break;
   default:
     http_response_code(405);

@@ -2,6 +2,7 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../helpers/array_helper.php';
 require_once __DIR__.'/../auth/token.php';
+require_once __DIR__.'/../auth/password.php';
 
 switch ($method) {
   case 'GET':
@@ -35,28 +36,14 @@ switch ($method) {
       exit;
     }*/
 
-    $password = hash('sha256', $password);
-    $stmt = $pdo->prepare("
-      SELECT COUNT(id) FROM users
-      WHERE name = :name AND password = :password
-    ");
-    $stmt->execute(['name' => $username, 'password' => $password]);
-    $user_count_json = $stmt->fetch(PDO::FETCH_ASSOC);
-    $user_count = json_encode($user_count_json['COUNT(id)']);
+    $user_id = get_id_if_matches($username, $password, $pdo);
 
-    if ($user_count != 1) {
+    if ($user_id === -1) {
       http_response_code(401);
       echo json_encode(['error' => "Please check your username and password"]);
       exit;
     }
 
-    $password = null;
-    $stmt = $pdo->prepare("
-      SELECT id FROM users
-      WHERE name = :name
-    ");
-    $stmt->execute(['name' => $username]);
-    $user_id = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
     $existing_session = find_session($session_token, $pdo);
     $retval = [];
     
