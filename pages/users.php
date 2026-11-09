@@ -21,43 +21,44 @@ if ($user['role'] != 'r') {
 }
 
 switch ($method) {
-    case 'GET':
-	      if (isset($_GET['id'])) {
-	          $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-            
-            if ($id === false || $id === null || $id < 1) {
-		            http_response_code(400);
-                $retval['status'] = 'Error: Invalid user id: '.$id;
-                echo json_encode($retval);
-		            exit;
-            }
+  case 'GET':
+    if (isset($_GET['id'])) {
+	    $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
-            $stmt = $pdo->prepare('SELECT id, name, email FROM users WHERE id = :id');
-	          $stmt->execute(['id' => $id]);
-	          $user = $stmt->fetch(PDO::FETCH_ASSOC);
+      if ($id === false || $id === null || $id < 1) {
+		    http_response_code(400);
+        $retval['status'] = 'Error: Invalid user id: '.$id;
+        echo json_encode($retval);
+		    exit;
+      }
 
-	          if (!$user) {
-                http_response_code(404);
-                $retval['status'] = 'Error: No user with id: '.$id;
-		            echo json_encode($retval);
-		            exit;
-            }
-            $retval['user'] = $user;
-            $retval['status'] = 'Success';
-	          echo json_encode($retval);
-	      } else {
-            // Retrieve all users
-            $stmt = $pdo->query("SELECT id, name, email FROM users");
-            $retval['users'] = $stmt->fetch(PDO::FETCH_ASSOC);
-            $retval['status'] = 'Success';
-            echo json_encode($retval);
-	      }
-	      break;
-    default:
-        http_response_code(405);
-        $retval['status'] = "Error: Unhandled method $method on endpoint $path";
-	      echo json_encode($retval);
-	      break;
+      $stmt = $pdo->prepare('SELECT id, name, email FROM users WHERE id = :id');
+	    $stmt->execute(['id' => $id]);
+	    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!$user) {
+        http_response_code(404);
+        $retval['status'] = 'Error: No user with id: '.$id;
+        echo json_encode($retval);
+		    exit;
+      }
+
+      $retval['user'] = $user;
+      $retval['status'] = 'Success';
+	    echo json_encode($retval);
+	  } else {
+      // Retrieve all users
+      $stmt = $pdo->query("SELECT id, name, email FROM users");
+      $retval['users'] = $stmt->fetch(PDO::FETCH_ASSOC);
+      $retval['status'] = 'Success';
+      echo json_encode($retval);
+	  }
+	  break;
+  default:
+    http_response_code(405);
+    $retval['status'] = "Error: Unhandled method $method on endpoint $path";
+	  echo json_encode($retval);
+	  break;
 }
 
 function no_authorization() {

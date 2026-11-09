@@ -18,23 +18,23 @@ $session_token = $_COOKIE['__Host-session'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {
-    case '/':
-        require_once __DIR__ .'/pages/index.php';
-        break;
-    case '/users':
-        require_once __DIR__ .'/pages/users.php';
-        break;
-    case '/login':
-      require_once __DIR__.'/api/login.php';
-      break;
-    case '/register':
-      require_once __DIR__.'/api/register.php';
-      break;
-    case '/notes':
-        require_once __DIR__ .'/api/notes.php';
-        break;
-    default:
-        http_response_code(404);
-        echo json_encode(['error' => "Could not find endpoint: $path"], JSON_UNESCAPED_SLASHES);
-        break;
+  case '/':
+    require_once __DIR__ .'/pages/index.php';
+    break;
+  case '/users':
+    require_once __DIR__ .'/pages/users.php';
+    break;
+  case '/login':
+    require_once __DIR__.'/api/login.php';
+    break;
+  case '/register':
+    require_once __DIR__.'/api/register.php';
+    break;
+  case '/notes':
+    require_once __DIR__ .'/api/notes.php';
+    break;
+  default:
+    http_response_code(404);
+    echo json_encode(['error' => "Could not find endpoint: $path"], JSON_UNESCAPED_SLASHES);
+    break;
 }
