@@ -38,7 +38,8 @@ switch ($method) {
     }
 
     require_once __DIR__.'/../auth/token.php';
-    $retval['token'] = create_token($user_id, $pdo);
+    create_token($user_id, $pdo);
+    $retval['status'] = 'Success';
     echo json_encode($retval);
     break;
   default:

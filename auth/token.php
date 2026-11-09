@@ -23,8 +23,6 @@ function create_token($user_id, $pdo) {
   ]);
 
   $session[$user_id] = $token_hash;
-  
-  return ['success' => true ];
 }
 
 function find_session($token, $pdo) {

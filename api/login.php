@@ -61,6 +61,8 @@ switch ($method) {
     } else {
       $retval['status'] = 'No session found, creating new session';
     }
+
+    create_token($user_id, $pdo);
     echo json_encode($retval);
     break;
   default:
