@@ -3,6 +3,8 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../auth/user_auth.php';
 
+$retval = [];
+
 switch ($method) {
   case 'POST':
     $data = json_decode(file_get_contents("php://input"), true);
@@ -11,19 +13,22 @@ switch ($method) {
 
     if (!(isset($name) && isset($password))) {
       http_response_code(400);
-      echo json_encode(['error' => "Username and password must be specified"]);
+      $retval['status'] = 'Error: Username and password must be specified';
+      echo json_encode($retval);
       exit;
     }
 
     if (!is_name_valid($name)) {
       http_response_code(400);
-      echo json_encode(['error' => "Username not valid"]);
+      $retval['status'] = 'Error: Invalid username';
+      echo json_encode($retval);
       exit;
     }
 
     if (strlen($password) < 8) {
       http_response_code(400);
-      echo json_encode(['error' => "Password too short"]);
+      $retval['status'] = 'Password too short';
+      echo json_encode($retval);
       exit;
     }
 
@@ -33,7 +38,8 @@ switch ($method) {
 
     if ($user_id == -1) {
       http_response_code(400);
-      echo json_encode(['error' => "User already exists"]);
+      $retval['status'] = 'Error: User already exists';
+      echo json_encode($retval);
       exit;
     }
 
@@ -44,7 +50,8 @@ switch ($method) {
     break;
   default:
     http_response_code(405);
-    echo json_encode(['error' => "Unhandled method $method on endpoint $path"]);
+    $retval['status'] = "Error: Unhandled method $method on endpoint $path";
+    echo json_encode($retval);
     break;
 }
 

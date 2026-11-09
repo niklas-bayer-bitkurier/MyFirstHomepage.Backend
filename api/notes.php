@@ -4,16 +4,12 @@ require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../auth/token.php';
 
 $existing_session = find_session($session_token, $pdo);
+$retval = [];
 
-if (!isset($existing_session)) {
+if (!isset($existing_session) || !$existing_session['is_valid']) {
   http_response_code(401);
-  echo json_encode(['error' => 'Not authorized to retrieve users']);
-  exit;
-}
-
-if (!$existing_session['is_valid']) {
-  http_response_code(400);
-  echo json_encode(['error' => 'Outdated session']);
+  $retval['status'] = "Error: Not authorized to access endpoint $path";
+  echo json_encode($retval);
   exit;
 }
 
@@ -29,8 +25,10 @@ switch ($method) {
     if (!isset($_GET['user'])) {
       $stmt = prepare_select_notes($pdo);
       $stmt->execute(['user' => $existing_session['user_id']]);
-      $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      echo json_encode($notes);
+      $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $retval['status'] = 'Success';
+      $retval['owner_id'] = $user_id;
+      echo json_encode($retval);
       exit;
     }
     
@@ -39,7 +37,8 @@ switch ($method) {
     if ($user == '-1') {
       if ($requester['role'] !='r') {
         http_response_code(401);
-        echo json_encode(['error' => "Not authorized to retrieve all notes"]);
+        $retval['status'] = 'Not authorized to retrieve all notes';
+        echo json_encode($retval);
         exit;
       }
       $stmt = $pdo->prepare('
@@ -47,23 +46,26 @@ switch ($method) {
         ORDER BY last_updated;
       ');
       $stmt->execute();
-      $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      echo json_encode($notes);
+      $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $retval['status'] = 'Success';
+      $retval['owner_id'] = -1;
+      echo json_encode($retval);
       exit;
     }
 
     if ($requester['id'] != $user && $requester['role'] != 'r') {
       http_response_code(401);
-      echo json_encode([
-        'error' => 'Not authorized not retrieve note for anyone else except you'
-      ]);
+      $retval['status'] = 'Error: Not authorized to retrieve foreign notes';
+      echo json_encode($retval);
       exit;
     }
 
     $stmt = prepare_select_notes($pdo);
     $stmt->execute(['user' => $user]);
-    $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode($notes);
+    $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $retval['status'] = 'Success';
+    $retval['owner_id'] = $user;
+    echo json_encode($retval);
     break;
   case 'POST':
     $current_time = time();
@@ -74,7 +76,8 @@ switch ($method) {
 
     if (!(isset($creation_id) && isset($title) && isset($content))) {
       http_response_code(400);
-      echo json_encode(['error' => 'A title and a some content must be specified when POSTing a note']);
+      $retval['status'] = 'Error: ID, tile and content must be specified';
+      echo json_encode($retval);
       exit;
     }
 
@@ -91,11 +94,9 @@ switch ($method) {
     $stmt->execute(['id' => $id]);
     $note = $stmt->fetch(PDO::FETCH_ASSOC);
     $note['creation_id'] = $creation_id;
-    echo json_encode($note);
-    break;
-  default:
-    http_response_code(405);
-    echo json_encode(['error' => "Unhandled method $method at endpoint $path"]);
+    $retval['note'] = $note;
+    $retval['status'] = 'Success';
+    echo json_encode($retval);
     break;
   case 'PATCH':
     $current_time = time();
@@ -106,7 +107,8 @@ switch ($method) {
 
     if (!(isset($id) && isset($title) && isset($content))) {
       http_response_code(400);
-      echo json_encode(['error' => "A note's id, its title and content must be specified when PATCHing"]);
+      $retval['status'] = 'ID, title and content must be specified';
+      echo json_encode($retval);
       exit;
     }
 
@@ -119,7 +121,8 @@ switch ($method) {
 
     if ($count != 1) {
       http_response_code(400);
-      echo json_encode(['error' => 'The specified note could not be found']);
+      $retval['status'] = 'Error: Specified note not found'
+      echo json_encode($retval);
       exit;
     }
 
@@ -137,7 +140,14 @@ switch ($method) {
     $stmt->execute(['id' => $id]);
     $note = $stmt->fetch(PDO::FETCH_ASSOC);
     $note['creation_id'] = null;
-    echo json_encode($note);
+    $retval['note'] = $note;
+    $retval['status'] = 'Success';
+    echo json_encode($retval);
+    break;
+  default:
+    http_response_code(405);
+    $retval['status'] = "Error: Unhandled method $method on endpoint $path";
+    echo json_encode($retval);
     break;
 }
 
