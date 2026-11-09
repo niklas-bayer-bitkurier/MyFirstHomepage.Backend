@@ -30,12 +30,6 @@ switch ($method) {
       exit;
     }
 
-    /*if (strlen($password) < 8) {
-      http_response_code(400);
-      echo json_encode(['error' => "Password too short"]);
-      exit;
-    }*/
-
     $user_id = get_id_if_matches($username, $password, $pdo);
 
     if ($user_id === -1) {
