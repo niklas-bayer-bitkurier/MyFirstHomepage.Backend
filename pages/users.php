@@ -42,7 +42,7 @@ switch ($method) {
 	  } else {
       // Retrieve all users
       $stmt = $pdo->query("SELECT id, name, email FROM users");
-      $retval['users'] = $stmt->fetch(PDO::FETCH_ASSOC);
+      $retval['users'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
       $retval['status'] = 'Success';
       echo json_encode($retval);
 	  }
