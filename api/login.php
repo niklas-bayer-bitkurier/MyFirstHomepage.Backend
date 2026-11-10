@@ -1,23 +1,17 @@
 <?php
+
 require_once __DIR__.'/../config/database.php';
-require_once __DIR__.'/../helpers/array_helper.php';
-require_once __DIR__.'/../auth/token.php';
 require_once __DIR__.'/../auth/user_auth.php';
+require_once __DIR__.'/../auth/token.php';
+
+$retval = [];
 
 switch ($method) {
   case 'GET':
-    $existing_session = find_session($session_token, $pdo);
-    $is_logged_in = isset($existing_session) && $existing_session['is_valid'];
-    $username = null;
-    if ($is_logged_in) {
-      $stmt = $pdo->prepare("
-        SELECT name FROM users
-        WHERE id = :id
-      ");
-      $stmt->execute(['id' => $existing_session['user_id']]);
-      $username = $stmt->fetch(PDO::FETCH_ASSOC)['name'];
-    }
-    echo json_encode(['loggedin' => $is_logged_in, 'username' => $username]);
+    $is_logged_in = isset($session) && $session['is_valid'];
+    $retval['logged_in'] = $is_logged_in;
+    $retval['user'] = $session['user'];
+    echo json_encode($retval);
     break;
   case 'POST':
     $data = json_decode(file_get_contents("php://input"), true);
@@ -26,50 +20,33 @@ switch ($method) {
 
     if (!(isset($username) && isset($password))) {
       http_response_code(400);
-      echo json_encode(['error' => "Username and password must be specified."]);
+      $retval['status'] = 'Error: Username and password must be specfied';
+      echo json_encode($retval);
       exit;
     }
-
-    /*if (strlen($password) < 8) {
-      http_response_code(400);
-      echo json_encode(['error' => "Password too short"]);
-      exit;
-    }*/
 
     $user_id = get_id_if_matches($username, $password, $pdo);
 
     if ($user_id === -1) {
       http_response_code(401);
-      echo json_encode(['error' => "Please check your username and password"]);
+      $retval['status'] = "Error: Password mismatch";
+      echo json_encode($retval);
       exit;
     }
 
-    $existing_session = find_session($session_token, $pdo);
-    $retval = [];
-    
-    if (isset($existing_session)) {
-      if ($existing_session['is_valid']) {
-        if ($existing_session['user_id'] == $user_id) {
-          echo json_encode([
-            'session_found' => "User $username is already logged in ..."
-          ]);
-          exit;
-        } else {
-          $str = $existing_session['user_id'];
-          $retval['session_found'] = "Found another session for user: $str";
-        }
-      } else {
-        $str = $existing_session['user_id'];
-        $retval['session_found'] = "Outdated session found for user: $str";
-      }
+    if (isset($session) && !$session['is_valid']) {
+      create_token($user_id, $pdo);
+      $retval['status'] = 'Success: New token created';
     } else {
-      $retval['session_found'] = "No session found";
+      $retval['status'] = 'Success: Using existing session';
     }
-    $retval['token'] = create_token($user_id, $pdo);
+
+    create_token($user_id, $pdo);
     echo json_encode($retval);
     break;
   default:
     http_response_code(405);
-    echo json_encode(['error' => "Unhadled method $method on endpoint $path"]);
+    $retval['status'] = "Error: Unhandled method $method on endpoint $path";
+    echo json_encode($retval);
     break;
 }

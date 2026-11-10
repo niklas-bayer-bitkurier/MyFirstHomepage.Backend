@@ -20,7 +20,6 @@ function get_id_if_matches($user_name, $password, $pdo) {
   $stmt->execute(['name' => $user_name]);
   $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
   $user_count = count($users);
-
   if ($user_count > 1) {
     throw new RuntimeException("Multiple users with the same username found: $user_name, count: $user_count");
   }
@@ -55,6 +54,6 @@ function register_user($user, $pdo) {
     VALUES (:name, :email, :password, :salt, :role)
   ');
   $stmt->execute($user);
-  $id = $pdo->lastInsertId();
+  $id = (int) $pdo->lastInsertId();
   return $id;
 }

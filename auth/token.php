@@ -1,7 +1,4 @@
 <?php
-require_once __DIR__.'/../helpers/array_helper.php';
-
-$session = [];
 
 function create_token($user_id, $pdo) {
   $token = bin2hex(random_bytes(32));
@@ -21,26 +18,26 @@ function create_token($user_id, $pdo) {
     'httponly' => true,
     'samesite' => 'None'
   ]);
-
-  $session[$user_id] = $token_hash;
-  
-  return ['success' => true ];
 }
 
 function find_session($token, $pdo) {
   $token_hash = hash('sha256', $token);
   $stmt = $pdo->prepare('
-    SELECT id, expires_at, user_id FROM auth_tokens
+    SELECT auth_tokens.id AS "id", expires_at, user_id, users.name AS "user_name", users.email AS "user_email", users.role AS "user_role"
+    FROM auth_tokens
+    JOIN users ON auth_tokens.user_id = users.id
     WHERE token_hash = :token_hash
   ');
   $stmt->execute(['token_hash' => $token_hash]);
   $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
   if (!$result) {
     return null;
   }
+  
   $expires_at = $result['expires_at'];
-  $session_user_id = $result['user_id'];
   $is_valid = time() <= $expires_at;
+  
   if (!$is_valid) {
     $stmt = $pdo->prepare('
       DELETE FROM auth_tokens
@@ -48,5 +45,11 @@ function find_session($token, $pdo) {
     ');
     $stmt->execute(['id' => $result['id']]);
   }
-  return ['is_valid' => $is_valid, 'user_id' => $session_user_id];
+
+  $user['id'] = $result['user_id'];
+  $user['name'] = $result['user_name'];
+  $user['email'] = $result['user_email'];
+  $user['role'] = $result['user_role'];
+
+  return ['is_valid' => $is_valid, 'user' => $user];
 }
