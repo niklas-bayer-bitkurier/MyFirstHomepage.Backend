@@ -35,7 +35,7 @@ switch ($method) {
       }
       $stmt = $pdo->prepare('
         SELECT * FROM notes
-        ORDER BY last_updated;
+        ORDER BY last_updated_at;
       ');
       $stmt->execute();
       $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -72,10 +72,10 @@ switch ($method) {
     }
 
     $stmt = $pdo->prepare('
-      INSERT INTO notes (title, content, owner_id, created_at, last_updated)
-      VALUES (:title, :content, :owner_id, :created_at, :last_updated)
+      INSERT INTO notes (title, content, owner_id, created_at, last_updated_at)
+      VALUES (:title, :content, :owner_id, :created_at, :last_updated_at)
     ');
-    $stmt->execute(['title' => $title, 'content' => $content, 'owner_id' => $user['id'], 'created_at' => $current_time, 'last_updated' => $current_time]);
+    $stmt->execute(['title' => $title, 'content' => $content, 'owner_id' => $user['id'], 'created_at' => $current_time, 'last_updated_at' => $current_time]);
     $id = (int) $pdo->lastInsertId();
     $stmt = $pdo->prepare('
       SELECT * from notes
@@ -125,10 +125,10 @@ switch ($method) {
 
     $stmt = $pdo->prepare('
       UPDATE notes
-      SET title = :title, content = :content, last_updated = :last_updated
+      SET title = :title, content = :content, last_updated_at = :last_updated_at
       WHERE id = :id
     ');
-    $stmt->execute(['title' => $title, 'content' => $content, 'last_updated' => $current_time, 'id' => $id]);
+    $stmt->execute(['title' => $title, 'content' => $content, 'last_updated_at' => $current_time, 'id' => $id]);
 
     $stmt = $pdo->prepare('
       SELECT * FROM notes
@@ -150,9 +150,9 @@ switch ($method) {
 
 function prepare_select_notes($pdo) {
   return $pdo->prepare('
-    SELECT notes.id AS "id", title, content, users.name AS "owner", created_at, last_updated FROM notes
+    SELECT notes.id AS "id", title, content, users.name AS "owner", created_at, last_updated_at FROM notes
     JOIN users ON notes.owner_id = users.id
     WHERE owner_id = :user
-    ORDER BY last_updated
+    ORDER BY last_updated_at
   ');
 }
