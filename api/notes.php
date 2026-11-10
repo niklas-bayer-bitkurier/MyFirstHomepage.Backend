@@ -26,8 +26,8 @@ switch ($method) {
     
     $requestee_id = filter_input(INPUT_GET, 'user', FILTER_VALIDATE_INT);
 
-    if ($requestee_id == '-1') {
-      if ($user['role'] !='r') {
+    if ($requestee_id === -1) {
+      if ($user['role'] !=='r') {
         http_response_code(401);
         $retval['status'] = 'Not authorized to retrieve all notes';
         echo json_encode($retval);
@@ -44,7 +44,7 @@ switch ($method) {
       exit;
     }
 
-    if ($user['id'] != $requestee_id && $user['role'] != 'r') {
+    if ($user['id'] !== $requestee_id && $user['role'] !== 'r') {
       http_response_code(401);
       $retval['status'] = 'Error: Not authorized to retrieve foreign notes';
       echo json_encode($retval);

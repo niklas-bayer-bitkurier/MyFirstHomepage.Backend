@@ -26,7 +26,7 @@ switch ($method) {
       exit;
     }
 
-    if (strlen($password) < 8) {
+    if (strlen($password) < 1) {
       http_response_code(400);
       $retval['status'] = 'Password too short';
       echo json_encode($retval);
@@ -37,7 +37,7 @@ switch ($method) {
     $password = compute_hash($password, $salt);
     $user_id = register_user(['name' => $name, 'password' => $password, 'salt' => $salt], $pdo);
 
-    if ($user_id == -1) {
+    if ($user_id === -1) {
       http_response_code(400);
       $retval['status'] = 'Error: User already exists';
       echo json_encode($retval);

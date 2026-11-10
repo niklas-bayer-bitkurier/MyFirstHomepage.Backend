@@ -9,7 +9,7 @@ if (!isset($session)) {
 
 $user = $session['user'];
 
-if ($user['role'] != 'r') {
+if ($user['role'] !== 'r') {
   no_authorization();
 }
 
