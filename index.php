@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__.'/config/database.php';
 require_once __DIR__.'/auth/token.php';
 
@@ -22,10 +23,10 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {
   case '/':
-    require_once __DIR__ .'/pages/index.php';
+    require_once __DIR__.'/pages/index.php';
     break;
   case '/users':
-    require_once __DIR__ .'/pages/users.php';
+    require_once __DIR__.'/pages/users.php';
     break;
   case '/login':
     require_once __DIR__.'/api/login.php';
@@ -34,7 +35,7 @@ switch ($path) {
     require_once __DIR__.'/api/register.php';
     break;
   case '/notes':
-    require_once __DIR__ .'/api/notes.php';
+    require_once __DIR__.'/api/notes.php';
     break;
   default:
     http_response_code(404);

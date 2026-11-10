@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__.'/../helpers/array_helper.php';
 
 function create_token($user_id, $pdo) {
   $token = bin2hex(random_bytes(32));

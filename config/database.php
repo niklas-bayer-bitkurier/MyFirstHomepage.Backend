@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__.'/bootstrap.php';
 
 $host = getenv('DB_HOST');
