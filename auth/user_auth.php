@@ -55,6 +55,6 @@ function register_user($user, $pdo) {
     VALUES (:name, :email, :password, :salt, :role)
   ');
   $stmt->execute($user);
-  $id = $pdo->lastInsertId();
+  $id = (int) $pdo->lastInsertId();
   return $id;
 }

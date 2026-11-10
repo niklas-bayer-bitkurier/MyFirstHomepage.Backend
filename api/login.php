@@ -39,7 +39,7 @@ switch ($method) {
 
     if ($user_id === -1) {
       http_response_code(401);
-      $retval['status'] = "Error: Password mismatch"
+      $retval['status'] = "Error: Password mismatch";
       echo json_encode($retval);
       exit;
     }
