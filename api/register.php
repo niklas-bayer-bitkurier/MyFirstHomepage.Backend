@@ -26,7 +26,7 @@ switch ($method) {
       exit;
     }
 
-    if (strlen($password) < 1) {
+    if (strlen($password) < 8) {
       http_response_code(400);
       $retval['status'] = 'Password too short';
       echo json_encode($retval);
