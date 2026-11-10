@@ -8,19 +8,9 @@ $retval = [];
 
 switch ($method) {
   case 'GET':
-    $existing_session = find_session($session_token, $pdo);
-    $is_logged_in = isset($existing_session) && $existing_session['is_valid'];
-    $username = null;
-    if ($is_logged_in) {
-      $stmt = $pdo->prepare("
-        SELECT name FROM users
-        WHERE id = :id
-      ");
-      $stmt->execute(['id' => $existing_session['user_id']]);
-      $username = $stmt->fetch(PDO::FETCH_ASSOC)['name'];
-    }
+    $is_logged_in = isset($session) && $session['is_valid'];
     $retval['logged_in'] = $is_logged_in;
-    $retval['username'] = $username;
+    $retval['user'] = $session['user'];
     echo json_encode($retval);
     break;
   case 'POST':
@@ -44,22 +34,11 @@ switch ($method) {
       exit;
     }
 
-    $existing_session = find_session($session_token, $pdo);
-    
-    if (isset($existing_session)) {
-      if ($existing_session['is_valid']) {
-        if ($existing_session['user_id'] == $user_id) {
-          $retval['status'] = 'Session found';
-          echo json_encode($retval);
-          exit;
-        } else {
-          $retval['status'] = 'Session found for another user, creating new session';
-        }
-      } else {
-        $retval['status'] = 'Outdated session, creating new session';
-      }
+    if (isset($session) && !$session['is_valid']) {
+      create_token($user_id, $pdo);
+      $retval['status'] = 'Success: New token created';
     } else {
-      $retval['status'] = 'No session found, creating new session';
+      $retval['status'] = 'Success: Using existing session';
     }
 
     create_token($user_id, $pdo);

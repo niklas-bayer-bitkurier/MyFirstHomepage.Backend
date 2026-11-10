@@ -2,19 +2,13 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../auth/token.php';
 
-$existing_session = find_session($session_token, $pdo);
 $retval = [];
 
-if (!isset($existing_session)) {
+if (!isset($session)) {
   no_authorization();
 }
 
-$stmt = $pdo->prepare('
-  SELECT name, role FROM users
-  WHERE id = :id
-');
-$stmt->execute(['id' => $existing_session['user_id']]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
+$user = $session['user'];
 
 if ($user['role'] != 'r') {
   no_authorization();
@@ -34,16 +28,16 @@ switch ($method) {
 
       $stmt = $pdo->prepare('SELECT id, name, email FROM users WHERE id = :id');
 	    $stmt->execute(['id' => $id]);
-	    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+	    $requestee = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      if (!$user) {
+      if (!$requestee) {
         http_response_code(404);
         $retval['status'] = 'Error: No user with id: '.$id;
         echo json_encode($retval);
 		    exit;
       }
 
-      $retval['user'] = $user;
+      $retval['user'] = $requestee;
       $retval['status'] = 'Success';
 	    echo json_encode($retval);
 	  } else {

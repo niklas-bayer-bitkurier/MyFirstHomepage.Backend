@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__.'/config/database.php';
+require_once __DIR__.'/auth/token.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: null");
@@ -15,6 +17,7 @@ switch ($method) {
 }
 
 $session_token = $_COOKIE['__Host-session'];
+$session = find_session($session_token, $pdo);
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {

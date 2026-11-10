@@ -3,39 +3,32 @@
 require_once __DIR__.'/../config/database.php';
 require_once __DIR__.'/../auth/token.php';
 
-$existing_session = find_session($session_token, $pdo);
 $retval = [];
 
-if (!isset($existing_session) || !$existing_session['is_valid']) {
+if (!isset($session) || !$session['is_valid']) {
   http_response_code(401);
   $retval['status'] = "Error: Not authorized to access endpoint $path";
   echo json_encode($retval);
   exit;
 }
 
+$user = $session['user'];
+
 switch ($method) {
   case 'GET':
-    $stmt = $pdo->prepare('
-      SELECT id, name, role FROM users
-      WHERE id = :id
-    ');
-    $stmt->execute(['id' => $existing_session['user_id']]);
-    $requester = $stmt->fetch(PDO::FETCH_ASSOC);
-
     if (!isset($_GET['user'])) {
       $stmt = prepare_select_notes($pdo);
-      $stmt->execute(['user' => $existing_session['user_id']]);
+      $stmt->execute(['user' => $user['id']]);
       $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
       $retval['status'] = 'Success';
-      $retval['owner_id'] = $user_id;
       echo json_encode($retval);
       exit;
     }
     
-    $user = filter_input(INPUT_GET, 'user', FILTER_VALIDATE_INT);
+    $requestee_id = filter_input(INPUT_GET, 'user', FILTER_VALIDATE_INT);
 
-    if ($user == '-1') {
-      if ($requester['role'] !='r') {
+    if ($requestee_id == '-1') {
+      if ($user['role'] !='r') {
         http_response_code(401);
         $retval['status'] = 'Not authorized to retrieve all notes';
         echo json_encode($retval);
@@ -48,12 +41,11 @@ switch ($method) {
       $stmt->execute();
       $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
       $retval['status'] = 'Success';
-      $retval['owner_id'] = -1;
       echo json_encode($retval);
       exit;
     }
 
-    if ($requester['id'] != $user && $requester['role'] != 'r') {
+    if ($user['id'] != $requestee_id && $user['role'] != 'r') {
       http_response_code(401);
       $retval['status'] = 'Error: Not authorized to retrieve foreign notes';
       echo json_encode($retval);
@@ -61,10 +53,9 @@ switch ($method) {
     }
 
     $stmt = prepare_select_notes($pdo);
-    $stmt->execute(['user' => $user]);
+    $stmt->execute(['user' => $requestee_id]);
     $retval['notes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $retval['status'] = 'Success';
-    $retval['owner_id'] = $user;
     echo json_encode($retval);
     break;
   case 'POST':
@@ -76,16 +67,16 @@ switch ($method) {
 
     if (!(isset($creation_id) && isset($title) && isset($content))) {
       http_response_code(400);
-      $retval['status'] = 'Error: ID, tile and content must be specified';
+      $retval['status'] = 'Error: CreationID, title and content must be specified';
       echo json_encode($retval);
       exit;
     }
 
     $stmt = $pdo->prepare('
-      INSERT INTO notes (title, content, owner_id, creation_date, last_updated)
-      VALUES (:title, :content, :owner_id, :creation_date, :last_updated)
+      INSERT INTO notes (title, content, owner_id, created_at, last_updated)
+      VALUES (:title, :content, :owner_id, :created_at, :last_updated)
     ');
-    $stmt->execute(['title' => $title, 'content' => $content, 'owner_id' => $existing_session['user_id'], 'creation_date' => $current_time, 'last_updated' => $current_time]);
+    $stmt->execute(['title' => $title, 'content' => $content, 'owner_id' => $user['id'], 'created_at' => $current_time, 'last_updated' => $current_time]);
     $id = (int) $pdo->lastInsertId();
     $stmt = $pdo->prepare('
       SELECT * from notes
@@ -113,15 +104,22 @@ switch ($method) {
     }
 
     $stmt = $pdo->prepare('
-      SELECT COUNT(id) FROM notes
+      SELECT owner_id FROM notes
       WHERE id = :id
     ');
     $stmt->execute(['id' => $id]);
-    $count = $stmt->fetch(PDO::FETCH_ASSOC)['COUNT(id)'];
+    $owner_id = $stmt->fetch(PDO::FETCH_ASSOC)['owner_id'];
 
-    if ($count != 1) {
+    if (!$owner_id) {
       http_response_code(400);
-      $retval['status'] = 'Error: Specified note not found'
+      $retval['status'] = 'Error: Specified note not found';
+      echo json_encode($retval);
+      exit;
+    }
+
+    if (!$owner_id !== $user['id'] && $user['role'] !== 'r') {
+      http_response_code(401);
+      $retval['status'] = 'Error: Not authorized to updated specified note';
       echo json_encode($retval);
       exit;
     }
@@ -153,7 +151,7 @@ switch ($method) {
 
 function prepare_select_notes($pdo) {
   return $pdo->prepare('
-    SELECT notes.id AS "id", title, content, users.name AS "owner", creation_date, last_updated FROM notes
+    SELECT notes.id AS "id", title, content, users.name AS "owner", created_at, last_updated FROM notes
     JOIN users ON notes.owner_id = users.id
     WHERE owner_id = :user
     ORDER BY last_updated
