@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../auth/user_auth.php';
 require_once __DIR__.'/../auth/token.php';
 
 $retval = [];
