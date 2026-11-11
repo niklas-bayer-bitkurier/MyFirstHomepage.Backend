@@ -23,7 +23,7 @@ function create_token($user_id, $pdo) {
 function find_session($token, $pdo) {
   $token_hash = hash('sha256', $token);
   $stmt = $pdo->prepare('
-    SELECT auth_tokens.id AS "id", expires_at, user_id, users.name AS "user_name", users.email AS "user_email", users.role AS "user_role"
+    SELECT auth_tokens.id AS "id", expires_at, user_id, users.name AS "user_name", users.role AS "user_role"
     FROM auth_tokens
     JOIN users ON auth_tokens.user_id = users.id
     WHERE token_hash = :token_hash
@@ -44,12 +44,12 @@ function find_session($token, $pdo) {
       WHERE id = :id
     ');
     $stmt->execute(['id' => $result['id']]);
+    return null;
   }
 
   $user['id'] = $result['user_id'];
   $user['name'] = $result['user_name'];
-  $user['email'] = $result['user_email'];
   $user['role'] = $result['user_role'];
 
-  return ['is_valid' => $is_valid, 'user' => $user];
+  return ['user' => $user];
 }

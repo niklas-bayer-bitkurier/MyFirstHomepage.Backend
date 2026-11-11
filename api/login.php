@@ -8,9 +8,9 @@ $retval = [];
 
 switch ($method) {
   case 'GET':
-    $is_logged_in = isset($session) && $session['is_valid'];
+    $is_logged_in = isset($session) && $session !== null;
     $retval['logged_in'] = $is_logged_in;
-    $retval['user'] = $session['user'];
+    $retval['user'] = $session['user'] ?? null;
     echo json_encode($retval);
     break;
   case 'POST':
@@ -34,14 +34,13 @@ switch ($method) {
       exit;
     }
 
-    if (isset($session) && !$session['is_valid']) {
+    if (!isset($session) || $session === null) {
       create_token($user_id, $pdo);
-      $retval['status'] = 'Success: New token created';
+      $retval['status'] = 'Success: Token created';
     } else {
       $retval['status'] = 'Success: Using existing session';
     }
 
-    create_token($user_id, $pdo);
     echo json_encode($retval);
     break;
   default:
