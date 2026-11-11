@@ -3,7 +3,7 @@ require_once __DIR__.'/../config/database.php';
 
 $retval = [];
 
-if (!isset($session)) {
+if (!isset($session) || $session === null) {
   no_authorization();
 }
 

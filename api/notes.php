@@ -4,7 +4,7 @@ require_once __DIR__.'/../config/database.php';
 
 $retval = [];
 
-if (!isset($session) || !$session['is_valid']) {
+if (!isset($session) || $session === null) {
   http_response_code(401);
   $retval['status'] = "Error: Not authorized to access endpoint $path";
   echo json_encode($retval);
