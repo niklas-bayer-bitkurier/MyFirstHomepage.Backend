@@ -38,7 +38,9 @@ function find_session($token, $pdo) {
   $time = time();
   $expires_at = $result['expires_at'];
   $created_at = $result['created_at'];
-  $is_valid = $time <= $expires_at && $time >= $created_at;
+  $is_valid = $time <= $expires_at
+    && $time >= $created_at
+    && $expires_at > $created_at;
   
   if (!$is_valid) {
     $stmt = $pdo->prepare('
