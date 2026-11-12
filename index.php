@@ -17,8 +17,7 @@ switch ($method) {
     exit;
 }
 
-$session_token = $_COOKIE['__Host-session'];
-$session = find_session($session_token, $pdo);
+$session = find_session($_COOKIE['__Host-session'], $pdo);
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {

@@ -55,7 +55,7 @@ function find_session($token, $pdo) {
   $user['name'] = $result['user_name'];
   $user['role'] = $result['user_role'];
 
-  return ['user' => $user];
+  return ['token' => $token, 'user' => $user];
 }
 
 function try_dispose_expired_tokens_for($user_id, $pdo) {
