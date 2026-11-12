@@ -45,6 +45,7 @@ switch ($method) {
     }
 
     create_token($user_id, $pdo);
+    $retval['disposed_tokens'] = try_dispose_expired_tokens_for($user_id, $pdo);
     $retval['status'] = 'Success: Token created';
     echo json_encode($retval);
     break;

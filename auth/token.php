@@ -53,3 +53,13 @@ function find_session($token, $pdo) {
 
   return ['user' => $user];
 }
+
+function try_dispose_expired_tokens_for($user_id, $pdo) {
+  $time = time();
+  $stmt = $pdo->prepare('
+    DELETE FROM auth_tokens
+    WHERE user_id = :user_id AND expires_at < :time;
+  ');
+  $stmt->execute(['user_id' => $user_id, 'time' => $time]);
+  return $stmt->rowCount() > 0;
+}
