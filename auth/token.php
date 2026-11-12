@@ -1,5 +1,7 @@
 <?php
 
+define('SESSION_COOKIE_NAME', '__Host-session');
+
 function create_token($user_id, $pdo) {
   $token = bin2hex(random_bytes(32));
   $token_hash = hash('sha256', $token);
@@ -11,13 +13,32 @@ function create_token($user_id, $pdo) {
   ");
   $stmt->execute(['user_id' => $user_id, 'token_hash' => $token_hash, 'expires_at' => $expires_at, 'created_at' => $created_at]);
 
-  setcookie('__Host-session', $token, [
+  setcookie(SESSION_COOKIE_NAME, $token, [
     'expires' => $expires_at,
     'path' => '/',
     'secure' => true,
     'httponly' => true,
     'samesite' => 'None'
   ]);
+}
+
+function try_delete_token($token, $pdo) {
+  $token_hash = hash('sha256', $token);
+  $stmt=$pdo->prepare('
+    DELETE FROM auth_tokens
+    WHERE token_hash = :token_hash
+  ');
+  $stmt->execute(['token_hash' => $token_hash]);
+  $success = $stmt->rowCount() === 1;
+  if ($success)
+    setcookie(SESSION_COOKIE_NAME, '', [
+      'expires' => 1,
+      'path' => '/',
+      'secure' => true,
+      'httponly' => true,
+      'samesite' => 'None'
+    ]);
+  return $success;
 }
 
 function find_session($token, $pdo) {
@@ -55,7 +76,7 @@ function find_session($token, $pdo) {
   $user['name'] = $result['user_name'];
   $user['role'] = $result['user_role'];
 
-  return ['user' => $user];
+  return ['token' => $token, 'user' => $user];
 }
 
 function try_dispose_expired_tokens_for($user_id, $pdo) {

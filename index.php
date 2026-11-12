@@ -17,8 +17,7 @@ switch ($method) {
     exit;
 }
 
-$session_token = $_COOKIE['__Host-session'];
-$session = find_session($session_token, $pdo);
+$session = find_session($_COOKIE[SESSION_COOKIE_NAME], $pdo);
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {
@@ -30,6 +29,9 @@ switch ($path) {
     break;
   case '/login':
     require_once __DIR__.'/api/login.php';
+    break;
+  case '/logout':
+    require_once __DIR__.'/api/logout.php';
     break;
   case '/register':
     require_once __DIR__.'/api/register.php';
