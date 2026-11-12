@@ -20,6 +20,16 @@ function create_token($user_id, $pdo) {
   ]);
 }
 
+function try_delete_token($token, $pdo) {
+  $token_hash = hash('sha256', $token);
+  $stmt=$pdo->prepare('
+    DELETE FROM auth_tokens
+    WHERE token_hash = :token_hash
+  ');
+  $stmt->execute(['token_hash' => $token_hash]);
+  return $stmt->rowCount() === 1;
+}
+
 function find_session($token, $pdo) {
   $token_hash = hash('sha256', $token);
   $stmt = $pdo->prepare('
