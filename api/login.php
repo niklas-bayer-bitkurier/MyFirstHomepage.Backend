@@ -34,13 +34,19 @@ switch ($method) {
       exit;
     }
 
-    if (!isset($session) || $session === null) {
-      create_token($user_id, $pdo);
-      $retval['status'] = 'Success: Token created';
-    } else {
-      $retval['status'] = 'Success: Using existing session';
+    if (isset($session) && $session !== null) {
+      $user = $session['user']; 
+    
+      if ($user['name'] === $username) {
+        $retval['status'] = 'Success: Using existing session';
+        echo json_encode($retval);
+        exit;
+      }
     }
 
+    create_token($user_id, $pdo);
+    $retval['disposed_tokens'] = try_dispose_expired_tokens_for($user_id, $pdo);
+    $retval['status'] = 'Success: Token created';
     echo json_encode($retval);
     break;
   default:
