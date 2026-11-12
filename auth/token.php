@@ -1,5 +1,7 @@
 <?php
 
+define('SESSION_COOKIE_NAME', '__Host-session');
+
 function create_token($user_id, $pdo) {
   $token = bin2hex(random_bytes(32));
   $token_hash = hash('sha256', $token);
@@ -11,7 +13,7 @@ function create_token($user_id, $pdo) {
   ");
   $stmt->execute(['user_id' => $user_id, 'token_hash' => $token_hash, 'expires_at' => $expires_at, 'created_at' => $created_at]);
 
-  setcookie('__Host-session', $token, [
+  setcookie(SESSION_COOKIE_NAME, $token, [
     'expires' => $expires_at,
     'path' => '/',
     'secure' => true,
@@ -29,7 +31,7 @@ function try_delete_token($token, $pdo) {
   $stmt->execute(['token_hash' => $token_hash]);
   $success = $stmt->rowCount() === 1;
   if ($success)
-    setcookie('__Host-session', '', [
+    setcookie(SESSION_COOKIE_NAME, '', [
       'expires' => 1,
       'path' => '/',
       'secure' => true,
