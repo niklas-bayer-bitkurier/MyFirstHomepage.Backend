@@ -141,6 +141,45 @@ switch ($method) {
     $retval['status'] = 'Success';
     echo json_encode($retval);
     break;
+  case 'DELETE':
+    if (!isset($_GET['id'])) {
+      http_response_code(400);
+      $retval['status'] = 'Error: Must specify a note to delete';
+      echo json_encode($retval);
+      exit;
+    }
+    
+    $note_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+
+    if ($note_id === false || $note_id === null || $note_id < 1) {
+      http_response_code(400);
+      $retval['status'] = 'Error: Invalid note id: '.$note_id;
+      echo json_encode($retval);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT owner_id FROM notes WHERE id = :note_id');
+    $stmt->execute(['note_id' => $note_id]);
+    $note = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$note || $note['owner_id'] !== $user['id']) {
+      http_response_code(404);
+      $retval['status'] = 'Error: Specified resource note found';
+      echo json_encode($retval);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('DELETE FROM notes WHERE id = :note_id');
+    $stmt->execute(['note_id' => $note_id]);
+    $affectedRows = $stmt->rowCount();
+
+    if ($affectedRows !== 1) {
+      throw new Error("Something gone wrong when deleting a note. Affected rows in delete statement: ".$affectedRows);
+    }
+
+    $retval['status'] = 'Success: Note deleted';
+    echo json_encode($retval);
+    break;
   default:
     http_response_code(405);
     $retval['status'] = "Error: Unhandled method $method on endpoint $path";
