@@ -27,7 +27,16 @@ function try_delete_token($token, $pdo) {
     WHERE token_hash = :token_hash
   ');
   $stmt->execute(['token_hash' => $token_hash]);
-  return $stmt->rowCount() === 1;
+  $success = $stmt->rowCount() === 1;
+  if ($success)
+    setcookie('__Host-session', '', [
+      'expires' => 1,
+      'path' => '/',
+      'secure' => true,
+      'httponly' => true,
+      'samesite' => 'None'
+    ]);
+  return $success;
 }
 
 function find_session($token, $pdo) {
