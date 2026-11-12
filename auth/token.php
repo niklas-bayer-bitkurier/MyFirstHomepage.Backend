@@ -23,7 +23,7 @@ function create_token($user_id, $pdo) {
 function find_session($token, $pdo) {
   $token_hash = hash('sha256', $token);
   $stmt = $pdo->prepare('
-    SELECT auth_tokens.id AS "id", expires_at, user_id, users.name AS "user_name", users.email AS "user_email", users.role AS "user_role"
+    SELECT auth_tokens.id AS "id", expires_at, created_at, user_id, users.name AS "user_name", users.role AS "user_role"
     FROM auth_tokens
     JOIN users ON auth_tokens.user_id = users.id
     WHERE token_hash = :token_hash
@@ -34,9 +34,13 @@ function find_session($token, $pdo) {
   if (!$result) {
     return null;
   }
-  
+
+  $time = time();
   $expires_at = $result['expires_at'];
-  $is_valid = time() <= $expires_at;
+  $created_at = $result['created_at'];
+  $is_valid = $time <= $expires_at
+    && $time >= $created_at
+    && $expires_at > $created_at;
   
   if (!$is_valid) {
     $stmt = $pdo->prepare('
@@ -44,12 +48,22 @@ function find_session($token, $pdo) {
       WHERE id = :id
     ');
     $stmt->execute(['id' => $result['id']]);
+    return null;
   }
 
   $user['id'] = $result['user_id'];
   $user['name'] = $result['user_name'];
-  $user['email'] = $result['user_email'];
   $user['role'] = $result['user_role'];
 
-  return ['is_valid' => $is_valid, 'user' => $user];
+  return ['user' => $user];
+}
+
+function try_dispose_expired_tokens_for($user_id, $pdo) {
+  $time = time();
+  $stmt = $pdo->prepare('
+    DELETE FROM auth_tokens
+    WHERE user_id = :user_id AND expires_at < :time;
+  ');
+  $stmt->execute(['user_id' => $user_id, 'time' => $time]);
+  return $stmt->rowCount() > 0;
 }
