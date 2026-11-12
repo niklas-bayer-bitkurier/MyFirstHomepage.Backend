@@ -3,6 +3,11 @@
 require_once __DIR__.'/../config/database.php';
 
 switch ($method) {
+  case 'GET':
+    $is_logged_in = isset($session) && $session !== null;
+    $retval['logged_out'] = !$is_logged_in;
+    echo json_encode($retval);
+    break;
   case 'POST':
     if (!isset($session) || $session === null) {
       echo json_encode(['status' => 'Not logged in']);
