@@ -42,6 +42,9 @@ switch ($path) {
   case '/notes/transfer':
     require_once __DIR__.'/api/notes/transfer.php';
     break;
+  case '/messages':
+    require_once __DIR__.'/api/messages.php';
+    break;
   default:
     http_response_code(404);
     echo json_encode(['error' => "Could not find endpoint: $path"], JSON_UNESCAPED_SLASHES);
