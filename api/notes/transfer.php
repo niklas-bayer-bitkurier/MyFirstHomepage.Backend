@@ -87,6 +87,7 @@ switch ($method) {
       'reference_id' => $transfer_id
     ]);
     $pdo->commit();
+    echo json_encode(['status' => 'Transfer initialized']);
     break;
   default:
     http_response_code(405);
