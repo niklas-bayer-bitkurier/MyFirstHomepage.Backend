@@ -30,13 +30,14 @@ switch ($method) {
     }
 
     $stmt = $pdo->prepare('
-      SELECT owner_id FROM notes
-      WHERE id = :id
+      SELECT owner_id AS "id", users.name AS "owner_name" FROM notes
+      JOIN users ON owner_id = users.id
+      WHERE notes.id = :id
     ');
     $stmt->execute(['id' => $note_id]);
-    $owner_id = $stmt->fetch(PDO::FETCH_ASSOC)['owner_id'];
+    $owner = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($owner_id !== $user['id'] && $user['role'] !== 'r') {
+    if ($owner['id'] !== $user['id'] && $user['role'] !== 'r') {
       http_response_code(404);
       echo json_encode(['status' => 'Specified resource does not exist']);
       exit;
@@ -65,7 +66,7 @@ switch ($method) {
     ');
     $stmt->execute([
       'note_id' => $note_id,
-      'owner_id' => $owner_id,
+      'owner_id' => $owner['id'],
       'recipient_id' => $recipient_id,
       'initiator_id' => $user['id'],
       'created_at' => $currentTime
@@ -78,10 +79,10 @@ switch ($method) {
       )
     ');
     $stmt->execute([
-      'sender_id' => $owner_id,
+      'sender_id' => $owner['id'],
       'recipient_id' => $recipient_id,
       'subject' => 'Note transfer request',
-      'content' => "$owner_id wants to transfer a note to you",
+      'content' => "{$owner['id']} wants to transfer a note to you",
       'reference_type' => 'transfer',
       'reference_id' => $transfer_id
     ]);
