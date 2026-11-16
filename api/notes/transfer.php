@@ -55,6 +55,7 @@ switch ($method) {
       exit;
     }
 
+    $pdo->beginTransaction();
     $stmt = $pdo->prepare('
       INSERT INTO note_transfers (
         note_id, owner_id, recipient_id, initiator_id, created_at, accepted_at
@@ -69,7 +70,22 @@ switch ($method) {
       'initiator_id' => $user['id'],
       'created_at' => $currentTime
     ]);
-    
+    $transfer_id = $pdo->lastInsertId();
+    $stmt = $pdo->prepare('
+      INSERT INTO messages (sender_id, recipient_id, subject, content, reference_type, reference_id)
+      VALUES (
+        :sender_id, :recipient_id, :subject, :content, :reference_type, :reference_id
+      )
+    ');
+    $stmt->execute([
+      'sender_id' => $owner_id,
+      'recipient_id' => $recipient_id,
+      'subject' => 'Note transfer request',
+      'content' => "$owner_id wants to transfer a note to you",
+      'reference_type' => 'transfer',
+      'reference_id' => $transfer_id
+    ]);
+    $pdo->commit();
     break;
   default:
     http_response_code(405);
