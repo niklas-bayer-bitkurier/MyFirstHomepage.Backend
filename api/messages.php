@@ -13,7 +13,9 @@ $user = $session['user'];
 switch ($method) {
   case 'GET':
     $stmt = $pdo->prepare('
-      SELECT messages.id, sender_id, sender.name AS "sender_name", recipient_id, recipient.name AS "recipient_name", subject, content, status, reference_type, reference_id
+      SELECT messages.id, sender_id, sender.name AS "sender_name",
+        recipient_id, recipient.name AS "recipient_name",
+        subject, content, status, sent_at, reference_type, reference_id
       FROM messages
       JOIN users AS sender ON sender_id = sender.id
       JOIN users AS recipient ON recipient_id = recipient.id

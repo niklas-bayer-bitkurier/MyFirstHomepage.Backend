@@ -73,9 +73,9 @@ switch ($method) {
     ]);
     $transfer_id = $pdo->lastInsertId();
     $stmt = $pdo->prepare('
-      INSERT INTO messages (sender_id, recipient_id, subject, content, reference_type, reference_id)
+      INSERT INTO messages (sender_id, recipient_id, subject, content, sent_at, reference_type, reference_id)
       VALUES (
-        :sender_id, :recipient_id, :subject, :content, :reference_type, :reference_id
+        :sender_id, :recipient_id, :subject, :content, :sent_at, :reference_type, :reference_id
       )
     ');
     $stmt->execute([
@@ -83,6 +83,7 @@ switch ($method) {
       'recipient_id' => $recipient_id,
       'subject' => 'Note transfer request',
       'content' => "{$owner['id']} wants to transfer a note to you",
+      'sent_at' => $currentTime,
       'reference_type' => 'transfer',
       'reference_id' => $transfer_id
     ]);
