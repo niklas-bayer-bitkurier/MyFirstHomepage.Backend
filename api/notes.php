@@ -191,7 +191,7 @@ function prepare_select_notes($pdo) {
   return $pdo->prepare('
     SELECT notes.id AS "id", title, content, users.name AS "owner", created_at, last_updated_at FROM notes
     JOIN users ON notes.owner_id = users.id
-    WHERE owner_id = :user
+    WHERE owner_id = :user AND is_in_transfer = FALSE
     ORDER BY last_updated_at
   ');
 }

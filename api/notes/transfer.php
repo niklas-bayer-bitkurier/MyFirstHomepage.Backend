@@ -72,6 +72,16 @@ switch ($method) {
       'created_at' => $currentTime
     ]);
     $transfer_id = $pdo->lastInsertId();
+    
+    $stmt = $pdo->prepare('
+      UPDATE notes
+      SET is_in_transfer = TRUE
+      WHERE id = :note_id
+    ');
+    $stmt->execute([
+      'note_id' => $note_id
+    ]);
+
     $stmt = $pdo->prepare('
       INSERT INTO messages (sender_id, recipient_id, subject, content, sent_at, reference_type, reference_id)
       VALUES (
