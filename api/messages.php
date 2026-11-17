@@ -55,6 +55,62 @@ switch ($method) {
     $result['status'] ??= "Notes fetched for query status=$status";
     echo json_encode($result);
     break;
+  case 'PATCH':
+    $current_time = time();
+    $data = json_decode(file_get_contents("php://input"), true);
+    $messages = $data['messages'];
+
+    if (!isset($messages)) {
+      http_response_code(400);
+      echo json_encode(['status' => 'Messages must be specified']);
+      exit;
+    }
+
+    if (!is_array($messages) || empty($messages)) {
+      http_response_code(400);
+      echo json_encode(['status' => 'Messages object must be an array and must not be empty']);
+      exit;
+    }
+
+    $message_ids = [];
+    for ($i = 0; $i < count($messages); $i++) {
+      $message = $messages[$i];
+      if (!isset($message['id'])) {
+        http_response_code(400);
+        echo json_encode(['status' => 'Each message must contain its id']);
+        exit;
+      }
+      $id = $message['id'];
+      if (filter_var($id, FILTER_VALIDATE_INT) !== true && $id < 1) {
+        http_response_code(400);
+        echo json_encode(['status' => "A message contained an id in an invalid format: $id"]);
+        exit;
+      }
+      if (in_array($id, $message_ids)) {
+        http_response_code(400);
+        echo json_encode(['status' => 'A message may only be specified once']);
+        exit;
+      }
+      
+      $message_ids[$i] = $id;
+    }
+
+    $placeholder = implode(',', array_fill(0, count($message_ids), '?'));
+    $stmt = $pdo->prepare("
+      UPDATE messages
+      SET status = 'r', read_at = ?
+      WHERE recipient_id = ? AND status = 's' AND id IN ($placeholder)
+    ");
+    $stmt->execute([$current_time, $user['id'], ...$message_ids]);
+    $count = $stmt->rowCount();
+
+    if ($count !== count($messages)) {
+      $retval['warning'] = 'Not all messages where updated. Messages must be unread and directed to you. Transferred messages: '.count($messages);
+    }
+
+    $retval['status'] = "Updated $count messages as read";
+    echo json_encode($retval);
+    break;
   default:
     http_response_code(405);
     echo json_encode(['status' => "Unexpected method $method on endpoint $path"]);
