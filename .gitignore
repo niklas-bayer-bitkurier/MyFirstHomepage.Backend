@@ -2,6 +2,7 @@
 .idea
 .env
 /vendor/
+frontend
 
 # PHP CS Fixer configuration
 /.php-cs-fixer.cache
