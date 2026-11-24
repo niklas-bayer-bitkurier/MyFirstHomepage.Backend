@@ -11,6 +11,70 @@ if (!isset($session) || $session === null) {
 $user = $session['user'];
 
 switch ($method) {
+  case 'GET':
+    if (!isset($_GET['id'])) {
+      $stmt = $pdo->prepare('
+        SELECT
+        /* TRANSFER */
+          transfer.id,
+          transfer.created_at,
+          transfer.accepted_at,
+          transfer.status,
+        /* NOTE */
+          transfer.note_id,
+          note.title AS "note_title",
+          note.content AS "note_content",
+          note.created_at AS "note_created_at",
+          note.last_updated_at AS "note_last_updated_at",
+        /* OWNER */
+          transfer.owner_id,
+          owner.name AS "owner_name",
+          owner.role AS "owner_role",
+        /* RECIPIENT */
+          transfer.recipient_id,
+          recipient.name AS "recipient_name",
+          recipient.role AS "recipient_role"
+        FROM note_transfers transfer
+        JOIN notes note ON transfer.note_id = note.id
+        JOIN users owner ON transfer.owner_id = owner.id
+        JOIN users recipient ON transfer.recipient_id = recipient.id
+        WHERE transfer.recipient_id = :recipient_id
+      ');
+      $stmt->execute(['recipient_id' => $user['id']]);
+      $result = [];
+      while (($fetch = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+        $entry = [
+          'id' => $fetch['id'],
+          'created_at' => $fetch['created_at'],
+          'accepted_at' => $fetch['accepted_at'],
+          'status' => $fetch['status'],
+          'note' => [
+            'id' => $fetch['note_id'],
+            'title' => $fetch['note_title'],
+            'content' => $fetch['note_content'],
+            'owner' => [
+              'id' => $fetch['owner_id'],
+              'name' => $fetch['owner_name'],
+              'role' => $fetch['owner_role']
+            ],
+            'created_at' => $fetch['note_created_at'],
+            'last_updated_at' => $fetch['note_last_updated_at']
+          ],
+          'recipient' => [
+            'id' => $fetch['recipient_id'],
+            'name' => $fetch['recipient_name'],
+            'role' => $fetch['recipient_role']
+          ]
+        ];
+        array_push($result, $entry);
+      }
+
+      $retval['transfers'] = $result;
+      $retval['status'] = 'Success: Transfers fetched';
+      echo json_encode($retval);
+      exit;
+    }
+    break;
   case 'POST':
     $currentTime = time();
     $data = json_decode(file_get_contents('php://input'), true);
