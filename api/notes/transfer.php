@@ -164,6 +164,32 @@ switch ($method) {
     $pdo->commit();
     echo json_encode(['status' => 'Transfer initialized']);
     break;
+  case 'PATCH':
+    $current_time = time();
+    $data = json_decode(file_get_contents("php://input"), true);
+    $transfer_id = $data['transfer_id'];
+    $accept = $data['accept'];
+
+    if (!(isset($transfer_id) && isset($accept))) {
+      http_response_code(400);
+      $retval['status'] = 'Transfer id and accept state must be set';
+      echo json_encode($retval);
+      exit;
+    }
+
+    $stmt = $pdo->prepare('
+      UPDATE note_transfers
+      SET accepted_at = :time, status = :accepted
+      WHERE id = :id
+    ');
+    $stmt->execute(['time' => $current_time, 'accepted' => $accept === TRUE ? 'a' : 'd', 'id' => $transfer_id]);
+    if ($stmt->rowCount() !== 1) {
+      http_response_code(400);
+      echo json_encode(['status' => 'Error when updating transfer']);
+      exit;
+    }
+    echo json_encode(['status' => 'Success']);
+    break;
   default:
     http_response_code(405);
     echo json_encode(['status' => "Error: Unhandled method $method on endpoint $path"]);
