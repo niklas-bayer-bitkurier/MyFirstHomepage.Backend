@@ -156,7 +156,7 @@ switch ($method) {
       'sender_id' => $owner['id'],
       'recipient_id' => $recipient_id,
       'subject' => 'Note transfer request',
-      'content' => "{$owner['id']} wants to transfer a note to you",
+      'content' => "§user={$owner['id']} wants to transfer a note to you",
       'sent_at' => $currentTime,
       'reference_type' => 'transfer',
       'reference_id' => $transfer_id
