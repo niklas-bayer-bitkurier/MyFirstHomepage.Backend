@@ -103,22 +103,29 @@ switch ($method) {
     }
 
     $stmt = $pdo->prepare('
-      SELECT owner_id FROM notes
+      SELECT owner_id, is_in_transfer FROM notes
       WHERE id = :id
     ');
     $stmt->execute(['id' => $id]);
-    $owner_id = $stmt->fetch(PDO::FETCH_ASSOC)['owner_id'];
+    $note = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$owner_id) {
+    if (!$note) {
       http_response_code(400);
       $retval['status'] = 'Error: Specified note not found';
       echo json_encode($retval);
       exit;
     }
 
-    if (!$owner_id !== $user['id'] && $user['role'] !== 'r') {
+    if (!$note['owner_id'] !== $user['id'] && $user['role'] !== 'r') {
       http_response_code(401);
       $retval['status'] = 'Error: Not authorized to updated specified note';
+      echo json_encode($retval);
+      exit;
+    }
+
+    if ($note['is_in_transfer'] === 1) {
+      http_response_code(400);
+      $retval['status'] = 'Error: Note is currently in transfer and cannot be edited until the recipinet has accepted or declined the request';
       echo json_encode($retval);
       exit;
     }
@@ -158,13 +165,20 @@ switch ($method) {
       exit;
     }
 
-    $stmt = $pdo->prepare('SELECT owner_id FROM notes WHERE id = :note_id');
+    $stmt = $pdo->prepare('SELECT owner_id, is_in_transfer FROM notes WHERE id = :note_id');
     $stmt->execute(['note_id' => $note_id]);
     $note = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$note || $note['owner_id'] !== $user['id']) {
       http_response_code(404);
       $retval['status'] = 'Error: Specified resource note found';
+      echo json_encode($retval);
+      exit;
+    }
+
+    if ($note['is_in_transfer'] === 1) {
+      http_response_code(400);
+      $retval['status'] = 'Error: Note is currently in transfer and cannot be deleted until the recipinet has accepted or declined the request';
       echo json_encode($retval);
       exit;
     }
@@ -191,7 +205,7 @@ function prepare_select_notes($pdo) {
   return $pdo->prepare('
     SELECT notes.id AS "id", title, content, users.name AS "owner", created_at, last_updated_at FROM notes
     JOIN users ON notes.owner_id = users.id
-    WHERE owner_id = :user
+    WHERE owner_id = :user AND is_in_transfer = FALSE
     ORDER BY last_updated_at
   ');
 }
