@@ -39,8 +39,9 @@ switch ($method) {
         JOIN users owner ON transfer.owner_id = owner.id
         JOIN users recipient ON transfer.recipient_id = recipient.id
         WHERE transfer.recipient_id = :recipient_id
+          OR transfer.owner_id = :owner_id
       ');
-      $stmt->execute(['recipient_id' => $user['id']]);
+      $stmt->execute(['recipient_id' => $user['id'], 'owner_id' => $user['id']]);
       $result = [];
       while (($fetch = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
         $entry = [
@@ -177,17 +178,86 @@ switch ($method) {
       exit;
     }
 
+    $pdo->beginTransaction();
     $stmt = $pdo->prepare('
       UPDATE note_transfers
       SET accepted_at = :time, status = :accepted
       WHERE id = :id
     ');
     $stmt->execute(['time' => $current_time, 'accepted' => $accept === TRUE ? 'a' : 'd', 'id' => $transfer_id]);
+
     if ($stmt->rowCount() !== 1) {
       http_response_code(400);
       echo json_encode(['status' => 'Error when updating transfer']);
+      $pdo->rollBack();
       exit;
     }
+
+    $stmt = $pdo->prepare('
+      SELECT transfer.note_id, note.title AS "note_title",
+        transfer.recipient_id, recipient.name AS "recipient_name",
+        transfer.owner_id
+      FROM note_transfers transfer
+      JOIN notes note ON note.id = transfer.note_id
+      JOIN users owner ON owner.id = transfer.owner_id
+      JOIN users recipient ON recipient.id = transfer.recipient_id
+      WHERE transfer.id = :id
+    ');
+    $stmt->execute(['id' => $transfer_id]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($accept === TRUE) {
+      $stmt = $pdo->prepare('
+        UPDATE notes
+        SET owner_id = :new_owner_id, is_in_transfer = 0
+        WHERE id = :note_id
+      ');
+      $stmt->execute(['new_owner_id' => $data['recipient_id'], 'note_id' => $data['note_id']]);
+      if ($stmt->rowCount() !== 1) {
+        http_response_code(400);
+        echo json_encode(['status' => 'Could not update owner status']);
+        $pdo->rollBack();
+        exit;
+      }
+    } else {
+      $stmt = $pdo->prepare('
+        UPDATE notes
+        SET is_in_transfer = 0
+        WHERE id = :note_id
+      ');
+      $stmt->execute(['note_id' => $data['note_id']]);
+      if ($stmt->rowCount() !== 1) {
+        http_response_code(400);
+        echo json_encode(['status' => 'Could not remove in transfer status from note']);
+        $pdo->rollBack();
+        exit;
+      }
+    }
+    $stmt = $pdo->prepare('
+      INSERT INTO messages (
+        sender_id, recipient_id, subject, content, reference_type, reference_id, status, sent_at
+      ) VALUES (
+        :sender_id, :recipient_id, :subject, :content, "transfer-response", :transfer_id, "s", :sent_at
+      )
+    ');
+    $acceptedDeclined = $accept === TRUE
+      ? 'accepted'
+      : 'declined';
+    $stmt->execute([
+      'sender_id' => $data['recipient_id'],
+      'recipient_id' => $data['owner_id'],
+      'subject' => "Note transfer updated",
+      'content' => "§user={$data['recipient_id']} has {$acceptedDeclined} your transfer request for your note with the title \"§note_title={$data['note_id']}\"",
+      'transfer_id' => $transfer_id,
+      'sent_at' => $current_time
+    ]);
+    if ($stmt->rowCount() !== 1) {
+      http_response_code(400);
+      echo json_encode(['status' => 'Could not create answer message']);
+      $pdo->rollBack();
+      exit;
+    }
+    $pdo->commit();
     echo json_encode(['status' => 'Success']);
     break;
   default:
